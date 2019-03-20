@@ -7,23 +7,27 @@ class App extends Component {
 	constructor(props){
 		super(props)
 		this.state=({
-			frequency:440,
+			volume:0.8,
+			frequency:100,
 			play:true,
 			oscillator:null,
+			gainNode:null,
 			synth : new Tone.Synth().toMaster()
 		})
 	}
-	something(){
+	componentDidMount(){
 		// create web audio api context
 			if(!this.state.oscillator){
 				this.setState({
 					audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
 				},()=>{
 					this.setState({
-						oscillator:this.state.audioCtx.createOscillator()
+						oscillator:this.state.audioCtx.createOscillator(),
+						gainNode: this.state.audioCtx.createGain()
 					},()=>{	
-						this.state.oscillator.type = 'sine';
-						this.state.oscillator.connect(this.state.audioCtx.destination);
+						this.state.oscillator.connect(this.state.gainNode);
+						this.state.gainNode.connect(this.state.audioCtx.destination);
+						//this.state.oscillator.start();
 					})
 				})
 			}
@@ -35,21 +39,42 @@ class App extends Component {
 		this.setState({
 			frequency:e.target.value
 		},()=>{
+			this.state.gainNode.gain.setValueAtTime(this.state.volume, this.state.audioCtx.currentTime);
 			this.state.oscillator.frequency.setValueAtTime(this.state.frequency, this.state.audioCtx.currentTime); // value in hertz
+
 			if(this.state.play){
-				this.state.oscillator.start()
+				this.state.oscillator.start();
+
+				//this.state.oscillator.stop(this.state.audioCtx.currentTime+1);
 				this.setState({
 					play:!this.state.play
 				})
-			}
+			}	
 		})
+	}
+	volChange(e){
+		console.log(e.target.value)
+		this.setState({
+			volume:e.target.value
+		},()=>{
+			this.state.gainNode.gain.setValueAtTime(this.state.volume, this.state.audioCtx.currentTime);
+		});
+	}
+	release(e){
+		console.log("WHAT")
+		if(this.state.gainNode!=null){
+			this.state.gainNode.gain.setValueAtTime(0.0001,this.state.audioCtx.currentTime+1);
+		}
+	}
+	keyDown(e){
+		console.log(e.key)
 	}
 	render() {
 		return (
-		 <div className="App">
+		 <div className="App" onKeyDown={this.keyDown.bind(this)}>
 	      <header className="App-header">
-	      <button onClick={this.something.bind(this)}>BATTAN</button>
-				<input type="range" min="440" max="1600" value={this.state.frequency} onChange={this.valueChange.bind(this)} className="slider"/>
+				<input type="range" min="0.0" step="0.1" max="1.0" value={this.state.volume} onClick={this.volChange.bind(this)} onChange={this.volChange.bind(this)} className="slider"/>
+				<input onmouseup={this.release.bind(this)} type="range" min="40" max="120" value={this.state.frequency} onClick={this.valueChange.bind(this)} onChange={this.valueChange.bind(this)} className="slider"/>
 	     </header>
 	   </div>
 	 );
