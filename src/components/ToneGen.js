@@ -32,6 +32,7 @@ export default class ToneGen extends Component{
 			// create Oscillator node
             setInterval(this.checkActions.bind(this),250);
     }
+    
     silence(){
             this.state.gainNode.gain.exponentialRampToValueAtTime(0.0001,this.state.audioCtx.currentTime+0.1);
     }

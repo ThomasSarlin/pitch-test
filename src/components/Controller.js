@@ -48,9 +48,8 @@ export default class Controller extends Component {
 				data.push(cs.val());
 			})
 			this.setState({
-				drumInfo:data
+				drumInfo:this.shuffle(data)
 			},()=>{
-				console.log(this.state.drumInfo)
 				this.setState({loaded:true},()=>{
 					setTimeout(()=>this.setState({message:"Sample loaded, please estimate pitch"}),500)})
 			})
@@ -93,6 +92,23 @@ export default class Controller extends Component {
 		}
 		this.Keyboard.activateButton(e.key);
 	}
+	shuffle(array) {
+        var currentIndex = array.length, temporaryValue, randomIndex;
+
+        // While there remain elements to shuffle...
+        while (0 !== currentIndex) {
+
+            // Pick a remaining element...
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+
+            // And swap it with the current element.
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+        return array;
+    }
 	sendBtn(){
 		if(!this.state.loaded)return;
 		if(this.state.currentIndex<this.state.drumInfo.length-1){
