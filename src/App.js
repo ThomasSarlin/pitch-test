@@ -1,84 +1,71 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
-import Tone from 'tone';
-
+import ToneGen from './components/ToneGen.js';
 class App extends Component {
 	constructor(props){
 		super(props)
 		this.state=({
-			volume:0.8,
-			frequency:100,
-			play:true,
-			oscillator:null,
-			gainNode:null,
-			synth : new Tone.Synth().toMaster()
+			fz:100,
+			volume:0.8
 		})
-	}
-	componentDidMount(){
-		// create web audio api context
-			if(!this.state.oscillator){
-				this.setState({
-					audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
-				},()=>{
-					this.setState({
-						oscillator:this.state.audioCtx.createOscillator(),
-						gainNode: this.state.audioCtx.createGain()
-					},()=>{	
-						this.state.oscillator.connect(this.state.gainNode);
-						this.state.gainNode.connect(this.state.audioCtx.destination);
-						//this.state.oscillator.start();
-					})
-				})
-			}
-			// create Oscillator node
-	}
-	valueChange(e){
-		console.log(e.target.value)
-
-		this.setState({
-			frequency:e.target.value
-		},()=>{
-			this.state.gainNode.gain.setValueAtTime(this.state.volume, this.state.audioCtx.currentTime);
-			this.state.oscillator.frequency.setValueAtTime(this.state.frequency, this.state.audioCtx.currentTime); // value in hertz
-
-			if(this.state.play){
-				this.state.oscillator.start();
-
-				//this.state.oscillator.stop(this.state.audioCtx.currentTime+1);
-				this.setState({
-					play:!this.state.play
-				})
-			}	
-		})
-	}
-	volChange(e){
-		console.log(e.target.value)
-		this.setState({
-			volume:e.target.value
-		},()=>{
-			this.state.gainNode.gain.setValueAtTime(this.state.volume, this.state.audioCtx.currentTime);
-		});
-	}
-	release(e){
-		console.log("WHAT")
-		if(this.state.gainNode!=null){
-			this.state.gainNode.gain.setValueAtTime(0.0001,this.state.audioCtx.currentTime+1);
-		}
-	}
-	keyDown(e){
-		console.log(e.key)
 	}
 	render() {
 		return (
-		 <div className="App" onKeyDown={this.keyDown.bind(this)}>
-	      <header className="App-header">
-				<input type="range" min="0.0" step="0.1" max="1.0" value={this.state.volume} onClick={this.volChange.bind(this)} onChange={this.volChange.bind(this)} className="slider"/>
-				<input onmouseup={this.release.bind(this)} type="range" min="40" max="120" value={this.state.frequency} onClick={this.valueChange.bind(this)} onChange={this.valueChange.bind(this)} className="slider"/>
-	     </header>
-	   </div>
-	 );
+			<div className="App">
+				<header className="App-header">
+					<ToneGen 
+						fz={this.state.frequency}
+						gain={this.state.gain} />
+				</header>
+			</div>
+		);
 	}
 }
-
+function BufferLoader(context, urlList, callback) {
+	this.context = context;
+	this.urlList = urlList;
+	this.onload = callback;
+	this.bufferList = new Array();
+	this.loadCount = 0;
+  }
+  
+  BufferLoader.prototype.loadBuffer = function(url, index) {
+	// Load buffer asynchronously
+	var request = new XMLHttpRequest();
+	request.open("GET", url, true);
+	request.responseType = "arraybuffer";
+  
+	var loader = this;
+  
+	request.onload = function() {
+	  // Asynchronously decode the audio file data in request.response
+	  loader.context.decodeAudioData(
+		request.response,
+		function(buffer) {
+		  if (!buffer) {
+			alert('error decoding file data: ' + url);
+			return;
+		  }
+		  loader.bufferList[index] = buffer;
+		  if (++loader.loadCount == loader.urlList.length)
+			loader.onload(loader.bufferList);
+		},
+		function(error) {
+		  console.error('decodeAudioData error', error);
+		}
+	  );
+	}
+  
+	request.onerror = function() {
+	  alert('BufferLoader: XHR error');
+	}
+  
+	request.send();
+  }
+  
+  BufferLoader.prototype.load = function() {
+	for (var i = 0; i < this.urlList.length; ++i)
+	this.loadBuffer(this.urlList[i], i);
+  }
+  
 export default App;
