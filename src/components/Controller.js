@@ -5,15 +5,12 @@ import DrumGen from './DrumGen'
 import Keyboard from './Keyboard.js'
 import Button from 'react-bootstrap/Button'
 import '../App.css';
-import * as firebase from 'firebase';
 
 
-var footer={
-	fontSize:'10px'
-}
+
 var btn={
-	marginRight:'5vw',
-	marginLeft: '5vw'
+	marginRight:'1vw',
+	marginLeft: '1vw'
 }
 var upper={
 	marginTop:'20vh',
@@ -41,7 +38,7 @@ export default class Controller extends Component {
 	}
 	componentDidMount(){
 
-		var rootRef = firebase.database().ref("Drums")
+		var rootRef = this.props.database.ref("Drums")
 		rootRef.on("value",(ss)=>{
 			var data = []
 			ss.forEach(cs=>{
@@ -75,10 +72,10 @@ export default class Controller extends Component {
 				if(this.state.frequency+1<20000)this.setFrequencyAndPlay(this.state.frequency+1)
 			break;
 			case 'ArrowUp':
-				if(this.state.frequency+10>20000)this.setFrequencyAndPlay(this.state.frequency+10)
+				if(this.state.frequency+10<20000)this.setFrequencyAndPlay(this.state.frequency+10)
 			break;
 			case 'ArrowDown':
-				if(this.state.frequency-10<0)this.setFrequencyAndPlay(this.state.frequency-10)
+				if(this.state.frequency-10>0)this.setFrequencyAndPlay(this.state.frequency-10)
 			break;
 			case 's':
 				this.setFrequencyAndPlay(this.state.frequency);
@@ -114,8 +111,9 @@ export default class Controller extends Component {
 		if(this.state.currentIndex<this.state.drumInfo.length-1){
 			this.setState({loaded:false},()=>{
 				console.log(this.state.drumInfo[this.state.currentIndex].name)
-				firebase.database().ref("Estimations").child(this.state.drumInfo[this.state.currentIndex].name).push({
-					val:this.state.frequency
+				this.props.database.ref("Estimations").child(this.state.drumInfo[this.state.currentIndex].name).push({
+					val:this.state.frequency,
+					valEst:1
 				},()=>{
 					this.setState({
 						currentIndex:this.state.currentIndex+1,
@@ -135,8 +133,9 @@ export default class Controller extends Component {
 		
 		if(this.state.currentIndex<this.state.drumInfo.length-1){
 			this.setState({loaded:false},()=>{
-				firebase.database().ref("Estimations").child(this.state.drumInfo[this.state.currentIndex].name).push({
-					val:'-1'
+				this.props.database.ref("Estimations").child(this.state.drumInfo[this.state.currentIndex].name).push({
+					val:this.state.frequency,
+					valEst:'-1'
 				},()=>{
 					this.setState({
 						currentIndex:this.state.currentIndex+1,
@@ -157,6 +156,28 @@ export default class Controller extends Component {
 			message:"Thank you for participating!",
 			finish:true
 		})
+	}
+	unBtn(){
+		if(!this.state.loaded)return;
+		
+		if(this.state.currentIndex<this.state.drumInfo.length-1){
+			this.setState({loaded:false},()=>{
+				this.props.database.ref("Estimations").child(this.state.drumInfo[this.state.currentIndex].name).push({
+					val:this.state.frequency,
+					valEst:'0'
+				},()=>{
+					this.setState({
+						currentIndex:this.state.currentIndex+1,
+						message:"Loading next sample..",
+					},()=>{setTimeout(()=>this.setState({loaded:true,message:"Sample loaded, please estimate pitch"}),500)})
+				})
+			})
+		}
+		else
+			this.setState({
+				message:"Thank you for participating!",
+				finish:true
+			})
 	}
 	setFrequencyAndPlay(fz){
 		this.setState({
@@ -186,11 +207,11 @@ export default class Controller extends Component {
 			</div>
 			{this.state.finish?"":
 			<div style={lower}>
-			 	<Button style={btn} size="lg" variant="success" onClick={this.sendBtn.bind(this)}>Send estimation</Button>
+			 	<Button style={btn} size="lg" variant="success" onClick={this.sendBtn.bind(this)}>Sure enstimation</Button>
+			 	<Button style={btn} size="lg" variant="info" onClick={this.unBtn.bind(this)}>Unsure estimation</Button>
 			 	<Button style={btn}  size="lg" variant="warning" onClick={this.passBtn.bind(this)}>Indeterminable</Button>
 				<Button style={btn} size="lg" variant="danger" onClick={this.abBtn.bind(this)}>Abort test</Button>
         	</div>}
-			<footer style={footer}>Made by Thomas Sarlin, thomas@greyleaf.se</footer>
 	    </div>
 	 );
 	}
